@@ -5,6 +5,14 @@ use rand::Rng;
 
 const CHUNK_SIZE: usize = 1024;
 
+fn gen_id(length: u32) -> String {
+    let mut rng = rand::thread_rng();
+    let uid: String = (0..length)
+        .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
+        .collect();
+    uid
+}
+
 fn get_dir_contents(path: &String) -> Vec<String> {
     let mut contents = Vec::new();
     for file_result in fs::read_dir(path).unwrap() {
@@ -45,8 +53,7 @@ fn create_packets(path: &String) -> Vec<Packet> {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mut packet_map: HashMap<u32, Packet> = HashMap::new();
-    let mut rng = rand::thread_rng();
+    let mut packet_map: HashMap<String, Packet> = HashMap::new();
 
     match args.get(1) {
         Some(arg) => match arg.as_str() {
@@ -64,17 +71,19 @@ fn main() {
                         //println!("{}", dir_contents.join("\n"));
                         for f in dir_contents {
                             for packet in create_packets(&f) {
-                                packet_map.insert(rng.gen(), packet);
+                                packet_map.insert(gen_id(16), packet);
                             }
                         }
                     } else if fs::metadata(&p).unwrap().is_file() {
                         for packet in create_packets(p) {
-                            packet_map.insert(rng.gen(), packet);
+                            packet_map.insert(gen_id(16), packet);
                         }
                     }
                 }
 
-                println!("{}", packet_map.len());
+                for packet in packet_map.iter() {
+                    println!("{}", packet.0);
+                }
 
                 //fs::read()
             }
