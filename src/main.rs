@@ -1,5 +1,9 @@
 use std::env;
 use std::fs;
+use std::collections::HashMap;
+use rand::Rng;
+
+const CHUNK_SIZE: usize = 1024;
 
 fn get_dir_contents(path: &String) -> Vec<String> {
     let mut contents = Vec::new();
@@ -16,8 +20,33 @@ fn get_dir_contents(path: &String) -> Vec<String> {
     contents
 }
 
+struct Packet {
+    path: String,
+    index: u32,
+    data: Vec<u8>
+}
+
+fn create_packets(path: &String) -> Vec<Packet> {
+    let mut packets: Vec<Packet> = Vec::new();
+    let mut index = 0;
+    let bytes = fs::read(path).unwrap();
+
+    for chunk in bytes.chunks(CHUNK_SIZE) {
+        packets.push(Packet {
+            path: (path.to_owned()),
+            index: (index),
+            data: (chunk.to_vec())
+        });
+
+        index += 1;
+    }
+    packets
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let mut packet_map: HashMap<u32, Packet> = HashMap::new();
+    let mut rng = rand::thread_rng();
 
     match args.get(1) {
         Some(arg) => match arg.as_str() {
@@ -32,11 +61,20 @@ fn main() {
                     if !fs::metadata(&p).is_ok() { continue };
                     if fs::metadata(&p).unwrap().is_dir() {
                         let dir_contents = get_dir_contents(p);
-                        println!("{}", dir_contents.join("\n"));
+                        //println!("{}", dir_contents.join("\n"));
+                        for f in dir_contents {
+                            for packet in create_packets(&f) {
+                                packet_map.insert(rng.gen(), packet);
+                            }
+                        }
                     } else if fs::metadata(&p).unwrap().is_file() {
-
+                        for packet in create_packets(p) {
+                            packet_map.insert(rng.gen(), packet);
+                        }
                     }
                 }
+
+                println!("{}", packet_map.len());
 
                 //fs::read()
             }
